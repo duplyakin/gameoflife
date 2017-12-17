@@ -97,9 +97,10 @@ public class GameOfLifeImpl implements GameOfLife {
         final int row;
         final int N;
 
-        private RowCallable(final int[][] current, int row, int N) {
+        private RowCallable(final int[][] current,int[] buffer, int row, int N) {
             this.current = current;
             this.row = row;
+            this.buffer=buffer;
             this.N = N;
             top = row > 0 ? row - 1 : N - 1;
             bottom = row < N - 1 ? row + 1 : 0;
@@ -107,10 +108,10 @@ public class GameOfLifeImpl implements GameOfLife {
 
         private final int top;
         private final int bottom;
-
+        private final int[] buffer;
         @Override
         public int[] call() throws Exception {
-            int[] buffer = new int[N];
+            //int[] buffer = new int[N];
             int left;
             int right;
             int sum;
@@ -163,7 +164,7 @@ public class GameOfLifeImpl implements GameOfLife {
         for (int turn = 0; turn < iter; turn++) {
 
             for (int i = 0; i < N; i++) {
-                futures[i] = es.submit(new RowCallable(current, i, N));
+                futures[i] = es.submit(new RowCallable(current,next[i], i, N));
             }
             for (int i = 0; i < N; i++) {
                 try {
