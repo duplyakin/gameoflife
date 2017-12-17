@@ -114,17 +114,9 @@ public class GameOfLifeImpl implements GameOfLife {
             int left;
             int right;
             int sum;
-            for (int j = 0; j < N; j++) {
-                if (j > 0) {
-                    left = j - 1;
-                } else {
-                    left = N - 1;
-                }
-                if (j < N - 1) {
-                    right = j + 1;
-                } else {
-                    right = 0;
-                }
+            for (int j = 1; j < N-1; j++) {
+                left = j - 1;
+                right = j + 1;
                 sum = current[top][left] +
                         current[top][j] +
                         current[top][right] +
@@ -135,6 +127,29 @@ public class GameOfLifeImpl implements GameOfLife {
                         current[bottom][right];
                 buffer[j] = doLife(current[row][j], sum);
             }
+            left = N - 1;
+            right = 1;
+            sum = current[top][left] +
+                    current[top][0] +
+                    current[top][right] +
+                    current[row][left] +
+                    current[row][right] +
+                    current[bottom][left] +
+                    current[bottom][0] +
+                    current[bottom][right];
+            buffer[0]=doLife(current[row][0],sum);
+            left = N - 2;
+            right = 0;
+            sum = current[top][left] +
+                    current[top][N-1] +
+                    current[top][right] +
+                    current[row][left] +
+                    current[row][right] +
+                    current[bottom][left] +
+                    current[bottom][N-1] +
+                    current[bottom][right];
+            buffer[N-1]=doLife(current[row][N-1],sum);
+
             return buffer;
         }
     }
