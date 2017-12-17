@@ -90,16 +90,19 @@ public class GameOfLifeImpl implements GameOfLife {
 
     int[][] play(int[][] start, int iter) {
         int[][] current = start;
-
+        int[][] next = new int[N][N];
+        int[][] tmp;
         for (int turn = 0; turn < iter; turn++) {
-            int[][] next = new int[N][N];
+
             for (int i = 0; i < N; i++) {
                 for (int j = 0; j < N; j++) {
                     int sum = calcNeighboursSum(i, j, current);
                     next[i][j] = doLife(current[i][j], sum);
                 }
             }
+            tmp = current;
             current = next;
+            next = tmp;
         }
         return current;
     }
