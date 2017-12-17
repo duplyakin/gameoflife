@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import java.util.concurrent.*;
 
 /**
  * @author Vasyukevich Andrey
@@ -77,7 +77,7 @@ public class GameOfLifeImpl implements GameOfLife {
                 current[bottom][right];
     }
 
-    int doLife(int curval, int neighbours) {
+    static int doLife(int curval, int neighbours) {
         if (curval == 0 && neighbours == 3) {
             return 1;
         }
@@ -88,18 +88,79 @@ public class GameOfLifeImpl implements GameOfLife {
 
     }
 
+    private CountDownLatch latch = new CountDownLatch(4);
+    private ExecutorService es = Executors.newFixedThreadPool(4);
+
+
+    private class RowCallable implements Callable<int[]> {
+        final int[][] current;
+        final int row;
+        final int N;
+
+        private RowCallable(final int[][] current, int row, int N) {
+            this.current = current;
+            this.row = row;
+            this.N = N;
+            top = row > 0 ? row - 1 : N - 1;
+            bottom = row < N - 1 ? row + 1 : 0;
+        }
+
+        private final int top;
+        private final int bottom;
+
+        @Override
+        public int[] call() throws Exception {
+            int[] buffer = new int[N];
+            int left;
+            int right;
+            int sum;
+            for (int j = 0; j < N; j++) {
+                if (j > 0) {
+                    left = j - 1;
+                } else {
+                    left = N - 1;
+                }
+                if (j < N - 1) {
+                    right = j + 1;
+                } else {
+                    right = 0;
+                }
+                sum = current[top][left] +
+                        current[top][j] +
+                        current[top][right] +
+                        current[row][left] +
+                        current[row][right] +
+                        current[bottom][left] +
+                        current[bottom][j] +
+                        current[bottom][right];
+                buffer[j] = doLife(current[row][j], sum);
+            }
+            return buffer;
+        }
+    }
+
+
     int[][] play(int[][] start, int iter) {
         int[][] current = start;
         int[][] next = new int[N][N];
         int[][] tmp;
+        Future<int[]> futures[] = (Future<int[]>[]) new Future[N];
         for (int turn = 0; turn < iter; turn++) {
 
             for (int i = 0; i < N; i++) {
-                for (int j = 0; j < N; j++) {
-                    int sum = calcNeighboursSum(i, j, current);
-                    next[i][j] = doLife(current[i][j], sum);
+                futures[i] = es.submit(new RowCallable(current, i, N));
+            }
+            for (int i = 0; i < N; i++) {
+                try {
+                    next[i] = futures[i].get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
                 }
             }
+
+
             tmp = current;
             current = next;
             next = tmp;
@@ -115,7 +176,7 @@ public class GameOfLifeImpl implements GameOfLife {
         int[][] result = play(currentField, M);
         long finish = System.nanoTime();
         long timeConsumedNanos = finish - start;
-        System.out.println("time: " + (double)timeConsumedNanos/(double)10E9);
+        System.out.println("time: " + (double) timeConsumedNanos / (double) 10E9);
         return reportResult(result);
     }
 }
